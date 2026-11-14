@@ -71,7 +71,27 @@ initials <- function(name) {
   toupper(paste0(substr(p[1], 1, 1), if (length(p) > 1) substr(p[length(p)], 1, 1) else ""))
 }
 
+# Clean URLs: internal links drop ".html" (us.html -> us, index.html -> ./).
+# GitHub Pages serves page.html for /page automatically; .htaccess does the same on Apache.
+# Extensionless links don't resolve when opening files directly (file://), so for
+# local previews build with:  ALONE_CLEAN_URLS=false Rscript website/alonestatsdb/build.R
+clean_urls <- !identical(tolower(Sys.getenv("ALONE_CLEAN_URLS", "true")), "false")
+
+clean_path <- function(path) {
+  if (!clean_urls) return(path)
+  path <- sub("(^|/)index[.]html$", "\\1", path)
+  sub("[.]html$", "", path)
+}
+
+clean_links <- function(html) {
+  if (!clean_urls) return(html)
+  html <- gsub('href="((?:\\.\\./)*)index\\.html(#[^"]*)?"', 'href="\\1\\2"', html, perl = TRUE)
+  html <- gsub('href=""', 'href="./"', html, fixed = TRUE)
+  gsub('href="(?!https?:|//|#)([^"#]+?)\\.html(#[^"]*)?"', 'href="\\1\\2"', html, perl = TRUE)
+}
+
 write_page <- function(html, path) {
+  html <- clean_links(html)
   dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
   con <- file(path, open = "w", encoding = "UTF-8")
   on.exit(close(con))
@@ -192,7 +212,7 @@ stat <- function(v, k, s = NULL) {
 }
 
 page <- function(title, body, P = "", active = "", desc = "", path = "", card = "home", card_alt = site_name) {
-  canon <- paste0(site_url, "/", sub("^index[.]html$", "", path))
+  canon <- paste0(site_url, "/", if (clean_urls) clean_path(path) else sub("^index[.]html$", "", path))
   card_url <- h("{site_url}/images/social/{card}.jpg")
   nav <- cat0(c(
     h('<a href="{P}index.html"{if (active == "home") \' aria-current="page"\' else ""}>Home</a>'),
