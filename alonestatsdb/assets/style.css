@@ -428,6 +428,31 @@ details.table-view .table-wrap { margin-top: .7rem; }
 code, pre { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: .92em; }
 pre { background: #0e100f; border: 1px solid var(--line); border-radius: 8px; padding: .9rem 1rem; overflow-x: auto; color: var(--text); }
 
+/* buttons & downloads */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+  font-family: var(--font-head); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; font-size: 1rem;
+  padding: .55rem 1.05rem; border-radius: 7px; text-decoration: none;
+  color: var(--text); background: var(--raised); border: 1px solid var(--line);
+}
+.btn:hover { color: var(--text); border-color: var(--text-3); background: #2d332f; }
+.btn-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn-primary:hover { background: #f0bb5f; color: var(--accent-ink); border-color: #f0bb5f; }
+.btn-lg { font-size: 1.15rem; padding: .75rem 1.3rem; }
+.dl-actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .4rem; }
+.dl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 1rem; margin-top: -1.6rem; position: relative; z-index: 2; }
+.dl-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.3rem; display: flex; flex-direction: column; gap: .7rem; align-items: flex-start; }
+.dl-card h3 { font-family: var(--font-head); font-weight: 800; text-transform: uppercase; font-size: 1.7rem; line-height: 1; margin: 0; }
+.dl-card p { margin: 0; color: var(--text-2); }
+.dl-card .meta { font-size: .88rem; color: var(--text-3); margin-top: auto; }
+.dl-card pre { width: 100%; margin: 0; }
+details.dict { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: .6rem; }
+details.dict > summary { cursor: pointer; padding: .85rem 1.1rem; font-weight: 600; }
+details.dict > summary:hover { background: var(--raised); border-radius: var(--radius); }
+details.dict[open] > summary { border-bottom: 1px solid var(--line); }
+details.dict .table-wrap { border: 0; border-radius: 0 0 var(--radius) var(--radius); }
+code { color: #f0c987; }
+
 /* season prev / next */
 .pager { display: flex; justify-content: space-between; gap: 1rem; padding: 2.5rem 0 1rem; flex-wrap: wrap; }
 .pager a {

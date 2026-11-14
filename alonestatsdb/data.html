@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Download the data | Alone Stats Db</title>
+<meta name="description" content="Download the Alone and Alone Australia datasets as an Excel workbook or CSVs, or install the alone R package. Free under CC0.">
+<link rel="canonical" href="https://doehm.github.io/alonestatsdb/data">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta property="og:site_name" content="Alone Stats Db">
+<meta property="og:title" content="Download the data | Alone Stats Db">
+<meta property="og:description" content="Download the Alone and Alone Australia datasets as an Excel workbook or CSVs, or install the alone R package. Free under CC0.">
+<meta property="og:url" content="https://doehm.github.io/alonestatsdb/data">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://doehm.github.io/alonestatsdb/images/social/home.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Alone Stats Db share card.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Download the data | Alone Stats Db">
+<meta name="twitter:description" content="Download the Alone and Alone Australia datasets as an Excel workbook or CSVs, or install the alone R package. Free under CC0.">
+<meta name="twitter:image" content="https://doehm.github.io/alonestatsdb/images/social/home.jpg">
+<meta name="theme-color" content="#121513">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="topbar"><div class="wrap topbar-in">
+<a class="brand" href="./" aria-label="Alone Stats Db home"><img class="brand-logo" src="assets/favicon.svg" alt="" width="34" height="34"><span class="brand-mark">Alone</span><span class="brand-sub">Stats Db</span></a>
+<nav class="nav" aria-label="Main"><a href="./">Home</a>
+<a href="us">Alone US</a>
+<a href="au">Alone Australia</a>
+<a href="data" aria-current="page">Data</a></nav>
+</div></header>
+<main>
+<section class="hero no-photo"><div class="wrap"><div class="hero-in">
+<p class="eyebrow">Open data &middot; CC0</p>
+<h1 class="display">The data</h1>
+<p class="hero-sub">Every number on this site comes from the <strong>alone</strong> R package. Grab it as a spreadsheet, as CSVs, or straight into R.</p>
+<div class="dl-actions"><a class="btn btn-primary btn-lg" href="downloads/alone-data.xlsx" download>Download Excel (.xlsx)</a><a class="btn btn-lg" href="https://github.com/doehm/alone">View on GitHub</a></div>
+</div></div></section>
+<div class="wrap"><div class="dl-grid">
+<div class="dl-card"><p class="eyebrow">Spreadsheet</p><h3>Excel workbook</h3>
+<p>All four datasets in one file, one sheet each, plus a data dictionary. Filters and frozen headers ready to go.</p>
+<p class="meta">alone-data.xlsx &middot; 104 KB &middot; v0.8</p>
+<a class="btn btn-primary" href="downloads/alone-data.xlsx" download>Download .xlsx</a></div>
+<div class="dl-card"><p class="eyebrow">Source</p><h3>GitHub</h3>
+<p>The package source, how the data is built, version history and release notes. Spot an error? Open an issue.</p>
+<p class="meta">github.com/doehm/alone</p>
+<div class="dl-actions"><a class="btn" href="https://github.com/doehm/alone">View repository</a><a class="btn" href="https://github.com/doehm/alone/issues">Report a data issue</a></div></div>
+<div class="dl-card"><p class="eyebrow">R package</p><h3>Install in R</h3>
+<p>Tidy data frames, documented and ready for analysis.</p>
+<pre>install.packages("alone")
+library(alone)
+survivalists</pre>
+<a class="btn" href="https://cran.r-project.org/package=alone">alone on CRAN</a></div>
+</div></div>
+<section class="section"><div class="wrap">
+<div class="section-head"><div><h2>Datasets</h2><p class="lede">Four tidy tables that join on <code>version</code>, <code>season</code> and <code>id</code>. Each is also available as its own CSV (UTF-8).</p></div></div>
+<div class="table-wrap"><table><thead><tr><th>Dataset</th><th>Description</th><th class="num">Rows</th><th class="num">Columns</th><th>CSV</th></tr></thead><tbody><tr><td><code>survivalists</code></td><td>Contains details of each survivalist including demographics and results.</td><td class="num">180</td><td class="num">20</td><td class="nowrap"><a href="downloads/csv/survivalists.csv" download>survivalists.csv</a> <span class="muted">(31 KB)</span></td></tr>
+<tr><td><code>loadouts</code></td><td>Information on each survivalists loadout of 10 items</td><td class="num">1,350</td><td class="num">7</td><td class="nowrap"><a href="downloads/csv/loadouts.csv" download>loadouts.csv</a> <span class="muted">(81 KB)</span></td></tr>
+<tr><td><code>episodes</code></td><td>Contains details of each episode including the title, number of viewers, beginning quote and IMDb rating</td><td class="num">195</td><td class="num">14</td><td class="nowrap"><a href="downloads/csv/episodes.csv" download>episodes.csv</a> <span class="muted">(49 KB)</span></td></tr>
+<tr><td><code>seasons</code></td><td>Season summary includes location and other season level information</td><td class="num">18</td><td class="num">10</td><td class="nowrap"><a href="downloads/csv/seasons.csv" download>seasons.csv</a> <span class="muted">(2 KB)</span></td></tr></tbody></table></div>
+</div></section>
+<section class="section"><div class="wrap">
+<div class="section-head"><div><h2>Data dictionary</h2><p class="lede">What every column means. The same dictionary is included in the Excel workbook.</p></div></div>
+<details class="dict"><summary><code>survivalists</code> <span class="muted">&middot; 20 columns &middot; Survivalists</span></summary>
+<div class="table-wrap"><table><thead><tr><th>Column</th><th>Description</th><th>Type</th></tr></thead><tbody><tr><td><code>version</code></td><td>Country code for the version of the show</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>season</code></td><td>The season number</td><td class="muted nowrap">numeric</td></tr>
+<tr><td><code>id</code></td><td>Survivalist ID</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>name</code></td><td>Name of the survivalist</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>first_name</code></td><td>First name of the survivalist</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>last_name</code></td><td>Last name of the survivalist</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>age</code></td><td>Age of survivalist</td><td class="muted nowrap">numeric</td></tr>
+<tr><td><code>gender</code></td><td>Gender</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>city</code></td><td>City</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>state</code></td><td>State</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>country</code></td><td>Country</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>result</code></td><td>Place the survivalist finished in the season</td><td class="muted nowrap">numeric</td></tr>
+<tr><td><code>days_lasted</code></td><td>The number of days lasted in the game before tapping out or winning</td><td class="muted nowrap">numeric</td></tr>
+<tr><td><code>medically_evacuated</code></td><td>Logical. If the survivalist was medically evacuated from the game</td><td class="muted nowrap">logical</td></tr>
+<tr><td><code>reason_tapped_out</code></td><td>The reason the survivalist tapped out of the game. NA means they were the winner</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>reason_category</code></td><td>A simplified category of the reason for tapping out</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>episode_tapped</code></td><td>Episode tapped out</td><td class="muted nowrap">numeric</td></tr>
+<tr><td><code>team</code></td><td>The team they were associated with (only for season 4)</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>day_linked_up</code></td><td>Day the team members linked up</td><td class="muted nowrap">numeric</td></tr>
+<tr><td><code>profession</code></td><td>Profession</td><td class="muted nowrap">character</td></tr></tbody></table></div></details>
+<details class="dict"><summary><code>loadouts</code> <span class="muted">&middot; 7 columns &middot; Loadouts</span></summary>
+<div class="table-wrap"><table><thead><tr><th>Column</th><th>Description</th><th>Type</th></tr></thead><tbody><tr><td><code>version</code></td><td>Country code for the version of the show</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>season</code></td><td>The season number</td><td class="muted nowrap">numeric</td></tr>
+<tr><td><code>id</code></td><td>Survivalist ID</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>name</code></td><td>Name of the survivalist</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>item_number</code></td><td>Item number</td><td class="muted nowrap">numeric</td></tr>
+<tr><td><code>item_detailed</code></td><td>Detailed loadout item description</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>item</code></td><td>Loadout item. Simplified for aggregation</td><td class="muted nowrap">character</td></tr></tbody></table></div></details>
+<details class="dict"><summary><code>episodes</code> <span class="muted">&middot; 14 columns &middot; Episodes</span></summary>
+<div class="table-wrap"><table><thead><tr><th>Column</th><th>Description</th><th>Type</th></tr></thead><tbody><tr><td><code>version</code></td><td>Country code for the version of the show</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>season</code></td><td>The season number</td><td class="muted nowrap">numeric</td></tr>
+<tr><td><code>episode_number_overall</code></td><td>Episode number across seasons</td><td class="muted nowrap">numeric</td></tr>
+<tr><td><code>episode</code></td><td>Episode number</td><td class="muted nowrap">numeric</td></tr>
+<tr><td><code>title</code></td><td>Episode title</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>day_start</code></td><td>The day the episode started on</td><td class="muted nowrap">numeric</td></tr>
+<tr><td><code>n_remaining</code></td><td>How are remaining at the start of the episode</td><td class="muted nowrap">numeric</td></tr>
+<tr><td><code>air_date</code></td><td>Date the episode originally aired</td><td class="muted nowrap">Date</td></tr>
+<tr><td><code>viewers</code></td><td>Number of viewers in the US (millions)</td><td class="muted nowrap">numeric</td></tr>
+<tr><td><code>quote</code></td><td>The beginning quote</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>author</code></td><td>Author of the beginning quote</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>imdb_rating</code></td><td>IMDb rating of the episode</td><td class="muted nowrap">numeric</td></tr>
+<tr><td><code>n_ratings</code></td><td>Number of ratings given for the episode</td><td class="muted nowrap">numeric</td></tr>
+<tr><td><code>description</code></td><td>Description of the episode from IMDb</td><td class="muted nowrap">character</td></tr></tbody></table></div></details>
+<details class="dict"><summary><code>seasons</code> <span class="muted">&middot; 10 columns &middot; Seasons</span></summary>
+<div class="table-wrap"><table><thead><tr><th>Column</th><th>Description</th><th>Type</th></tr></thead><tbody><tr><td><code>version</code></td><td>Country code for the version of the show</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>season</code></td><td>The season number</td><td class="muted nowrap">numeric</td></tr>
+<tr><td><code>subtitle</code></td><td>Season subtitle</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>location</code></td><td>Location</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>country</code></td><td>Country</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>region</code></td><td>Region</td><td class="muted nowrap">character</td></tr>
+<tr><td><code>n_survivors</code></td><td>Number of survivors. Season 4 there were 7 teams of 2.</td><td class="muted nowrap">numeric</td></tr>
+<tr><td><code>lat</code></td><td>Latitude</td><td class="muted nowrap">numeric</td></tr>
+<tr><td><code>lon</code></td><td>Longitude</td><td class="muted nowrap">numeric</td></tr>
+<tr><td><code>date_drop_off</code></td><td>Date the survivors where dropped off</td><td class="muted nowrap">character</td></tr></tbody></table></div></details>
+</div></section>
+<section class="section"><div class="wrap">
+<div class="section-head"><div><h2>Using the data</h2></div></div>
+<div class="panel"><p style="margin-top:0">The data is released under <strong>CC0</strong>: use it for anything, no permission needed. A link back to <a href="https://doehm.github.io/alonestatsdb/">Alone Stats Db</a> or the <a href="https://github.com/doehm/alone">alone package</a> is appreciated.</p>
+<p style="margin-bottom:0" class="muted">Compiled from Wikipedia, IMDb and the shows&#39; official cast pages. Survivalist photos on this site are not part of the dataset and remain the property of their respective owners.</p></div>
+</div></section>
+</main>
+<footer class="footer"><div class="wrap">
+<p class="footer-brand"><img class="brand-logo" src="assets/favicon.svg" alt="" width="26" height="26"><span><b>Alone Stats Db</b> &middot; alonestatsdb.com</span></p>
+<p>Data from the <a href="https://github.com/doehm/alone">alone</a> R package &mdash; tidy datasets on the survival TV series <em>Alone</em> and <em>Alone Australia</em>. <a href="data">Download the data</a>.</p>
+<p>Sources: Wikipedia, IMDb and the show&#39;s official cast pages. Built 14 Nov 2026.</p>
+<p class="disclaimer"><strong>Alone Stats Db is an unofficial, fan-built website.</strong> It is not affiliated with or endorsed by HISTORY, A&amp;E Networks, SBS or the producers of <em>Alone</em>. All survivalist images are the property of their respective owners: <em>Alone</em> images &copy; HISTORY / A&amp;E Networks; <em>Alone Australia</em> images &copy; SBS.</p>
+</div></footer>
+<script src="assets/site.js" defer></script>
+</body>
+</html>

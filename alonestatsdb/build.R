@@ -217,7 +217,8 @@ page <- function(title, body, P = "", active = "", desc = "", path = "", card = 
   nav <- cat0(c(
     h('<a href="{P}index.html"{if (active == "home") \' aria-current="page"\' else ""}>Home</a>'),
     h('<a href="{P}us.html"{if (active == "US") \' aria-current="page"\' else ""}>Alone US</a>'),
-    h('<a href="{P}au.html"{if (active == "AU") \' aria-current="page"\' else ""}>Alone Australia</a>')
+    h('<a href="{P}au.html"{if (active == "AU") \' aria-current="page"\' else ""}>Alone Australia</a>'),
+    h('<a href="{P}data.html"{if (active == "data") \' aria-current="page"\' else ""}>Data</a>')
   ))
   h('<!doctype html>
 <html lang="en">
@@ -257,7 +258,7 @@ page <- function(title, body, P = "", active = "", desc = "", path = "", card = 
 </main>
 <footer class="footer"><div class="wrap">
 <p class="footer-brand"><img class="brand-logo" src="{P}assets/favicon.svg" alt="" width="26" height="26"><span><b>{site_name}</b> &middot; alonestatsdb.com</span></p>
-<p>Data from the <a href="https://github.com/doehm/alone">alone</a> R package &mdash; tidy datasets on the survival TV series <em>Alone</em> and <em>Alone Australia</em>.</p>
+<p>Data from the <a href="https://github.com/doehm/alone">alone</a> R package &mdash; tidy datasets on the survival TV series <em>Alone</em> and <em>Alone Australia</em>. <a href="{P}data.html">Download the data</a>.</p>
 <p>Sources: Wikipedia, IMDb and the show&#39;s official cast pages. Built {format(Sys.Date(), "%d %b %Y")}.</p>
 <p class="disclaimer"><strong>{site_name} is an unofficial, fan-built website.</strong> It is not affiliated with or endorsed by HISTORY, A&amp;E Networks, SBS or the producers of <em>Alone</em>. All survivalist images are the property of their respective owners: <em>Alone</em> images &copy; HISTORY / A&amp;E Networks; <em>Alone Australia</em> images &copy; SBS.</p>
 </div></footer>
@@ -641,14 +642,191 @@ build_home <- function() {
     h('<section class="section"><div class="wrap"><div class="section-head"><div><h2>Alone US seasons</h2></div><a class="cta" href="us.html">Season summary &rarr;</a></div><div class="tile-grid">{season_tiles("US")}</div></div></section>'),
     h('<section class="section"><div class="wrap"><div class="section-head"><div><h2>Alone Australia seasons</h2></div><a class="cta" href="au.html">Season summary &rarr;</a></div><div class="tile-grid">{season_tiles("AU")}</div></div></section>'),
     h('<section class="section"><div class="wrap"><div class="section-head"><div><h2>Get the data</h2><p class="lede">Everything on this site comes from the <code>alone</code> R package: four tidy datasets &mdash; <code>survivalists</code>, <code>loadouts</code>, <code>episodes</code> and <code>seasons</code>.</p></div></div>
-<pre>install.packages("alone")
-library(alone)
-survivalists</pre></div></section>')
+<div class="dl-actions"><a class="btn btn-primary" href="downloads/alone-data.xlsx" download>Download Excel (.xlsx)</a><a class="btn" href="data.html">All download options &rarr;</a><a class="btn" href="https://github.com/doehm/alone">View on GitHub</a></div></div></section>')
   ))
   write_page(page(h("{site_name} | Every season of Alone, by the numbers"), body, P, "home",
                   h("Results, survivalists, loadouts and episodes for all {nrow(se)} seasons of Alone and Alone Australia, by the numbers."),
                   card = "home", card_alt = h("{site_name} share card showing the winners of every season.")),
              file.path(site, "index.html"))
+}
+
+# -----------------------------------------------------------------------------
+# data downloads (xlsx + csv) and the data page
+# -----------------------------------------------------------------------------
+
+repo_url <- "https://github.com/doehm/alone"
+cran_url <- "https://cran.r-project.org/package=alone"
+pkg_version <- unname(read.dcf(file.path(root, "DESCRIPTION"))[1, "Version"])
+
+# Parse the roxygen docs in R/datasets.R into titles, descriptions and a data dictionary
+parse_docs <- function(file) {
+  docs <- list(); block <- character()
+  for (ln in readLines(file, warn = FALSE)) {
+    if (startsWith(ln, "#'")) {
+      block <- c(block, sub("^#' ?", "", ln))
+    } else if (grepl('^"[A-Za-z_]+"$', trimws(ln))) {
+      docs[[gsub('"', "", trimws(ln))]] <- block; block <- character()
+    } else if (nzchar(trimws(ln))) block <- character()
+  }
+  lapply(docs, function(b) {
+    fmt_i <- grep("^@format", b)[1]
+    flat <- paste(b, collapse = " ")
+    pat <- "\\\\item\\{\\\\code\\{([^}]*)\\}\\}\\{"
+    m <- gregexpr(pat, flat, perl = TRUE)[[1]]
+    vars <- character(); descs <- character()
+    caps <- if (m[1] > 0) regmatches(flat, list(m))[[1]] else character()
+    for (k in seq_along(caps)) {
+      start <- m[k] + attr(m, "match.length")[k]
+      vars <- c(vars, sub(pat, "\\1", caps[k]))
+      chars <- strsplit(substring(flat, start), "")[[1]]
+      depth <- 1; q <- 0
+      while (depth > 0 && q < length(chars)) {
+        q <- q + 1
+        if (chars[q] == "{") depth <- depth + 1 else if (chars[q] == "}") depth <- depth - 1
+      }
+      d <- substr(flat, start, start + q - 2)
+      d <- gsub("\\\\code\\{([^}]*)\\}", "\\1", d)
+      descs <- c(descs, gsub("\\s+", " ", trimws(d)))
+    }
+    list(title = b[1],
+         desc = trimws(paste(b[seq(2, max(2, fmt_i - 1))], collapse = " ")),
+         source = gsub(".*\\\\url\\{([^}]*)\\}.*", "\\1", grep("^@source", b, value = TRUE)[1]),
+         vars = data.frame(variable = vars, description = descs, stringsAsFactors = FALSE))
+  })
+}
+
+build_downloads <- function() {
+  dl <- file.path(site, "downloads")
+  dir.create(file.path(dl, "csv"), recursive = TRUE, showWarnings = FALSE)
+  docs <- parse_docs(file.path(root, "R", "datasets.R"))
+  sets <- list(survivalists = survivalists, loadouts = loadouts, episodes = episodes, seasons = seasons)
+  sets <- lapply(sets, function(d) {
+    d <- as.data.frame(d)
+    d[] <- lapply(d, function(x) if (is.factor(x)) as.character(x) else x)
+    d
+  })
+
+  for (nm in names(sets)) {
+    write.csv(sets[[nm]], file.path(dl, "csv", paste0(nm, ".csv")), row.names = FALSE, na = "", fileEncoding = "UTF-8")
+  }
+
+  # only rewrite the workbook when the data (or package version) changes
+  hash <- paste(c(pkg_version, unname(tools::md5sum(file.path(dl, "csv", paste0(names(sets), ".csv"))))), collapse = "|")
+  hash_file <- file.path(dl, "data-hash.txt")
+  xlsx <- file.path(dl, "alone-data.xlsx")
+  if (!file.exists(xlsx) || !file.exists(hash_file) || !identical(readLines(hash_file, warn = FALSE), hash)) {
+    options(openxlsx.dateFormat = "yyyy-mm-dd")
+    wb <- openxlsx::createWorkbook(creator = site_name)
+    head_style <- openxlsx::createStyle(textDecoration = "bold", fgFill = "#1C201E", fontColour = "#ECE6DA",
+                                        border = "bottom", borderColour = "#E2A33B")
+    wrap <- openxlsx::createStyle(wrapText = TRUE, valign = "top")
+
+    about <- data.frame(
+      Dataset = names(sets),
+      Description = vapply(names(sets), function(n) docs[[n]]$desc, ""),
+      Rows = vapply(sets, nrow, 0L),
+      Columns = vapply(sets, ncol, 0L))
+    openxlsx::addWorksheet(wb, "About", gridLines = FALSE)
+    openxlsx::writeData(wb, "About", data.frame(x = c(
+      "Alone survival TV series datasets",
+      h("From the alone R package v{pkg_version} ({repo_url}), via {site_name} ({site_url})."),
+      "Licence: CC0 (public domain). Sources: Wikipedia, IMDb and the shows' official cast pages.",
+      "Sheets: one per dataset, plus 'Dictionary' describing every column.")), colNames = FALSE)
+    openxlsx::addStyle(wb, "About", openxlsx::createStyle(textDecoration = "bold", fontSize = 14), rows = 1, cols = 1)
+    openxlsx::writeData(wb, "About", about, startRow = 6, headerStyle = head_style)
+    openxlsx::setColWidths(wb, "About", 1:4, c(16, 80, 8, 9))
+    openxlsx::addStyle(wb, "About", wrap, rows = 7:10, cols = 2, gridExpand = TRUE)
+
+    dict <- do.call(rbind, lapply(names(sets), function(n) {
+      v <- docs[[n]]$vars
+      v$type <- vapply(sets[[n]][v$variable], function(x) class(x)[1], "")
+      cbind(dataset = n, v)
+    }))
+    openxlsx::addWorksheet(wb, "Dictionary")
+    openxlsx::writeData(wb, "Dictionary", dict, headerStyle = head_style)
+    openxlsx::freezePane(wb, "Dictionary", firstRow = TRUE)
+    openxlsx::addFilter(wb, "Dictionary", rows = 1, cols = seq_along(dict))
+    openxlsx::setColWidths(wb, "Dictionary", 1:4, c(14, 22, 90, 11))
+
+    for (nm in names(sets)) {
+      d <- sets[[nm]]
+      openxlsx::addWorksheet(wb, nm)
+      openxlsx::writeData(wb, nm, d, headerStyle = head_style)
+      openxlsx::freezePane(wb, nm, firstRow = TRUE)
+      openxlsx::addFilter(wb, nm, rows = 1, cols = seq_along(d))
+      widths <- vapply(names(d), function(cn) {
+        w <- max(nchar(cn), nchar(format(d[[cn]])), na.rm = TRUE)
+        min(max(w, 6) + 2, 60)
+      }, 0)
+      openxlsx::setColWidths(wb, nm, seq_along(d), widths)
+    }
+    openxlsx::saveWorkbook(wb, xlsx, overwrite = TRUE)
+    writeLines(hash, hash_file)
+    message("Wrote ", xlsx)
+  }
+  list(docs = docs, sets = sets, xlsx_kb = round(file.size(xlsx) / 1024))
+}
+
+build_data_page <- function(info) {
+  P <- ""
+  docs <- info$docs; sets <- info$sets
+  csv_kb <- function(n) round(file.size(file.path(site, "downloads/csv", paste0(n, ".csv"))) / 1024)
+
+  hero <- h('<section class="hero no-photo"><div class="wrap"><div class="hero-in">
+<p class="eyebrow">Open data &middot; CC0</p>
+<h1 class="display">The data</h1>
+<p class="hero-sub">Every number on this site comes from the <strong>alone</strong> R package. Grab it as a spreadsheet, as CSVs, or straight into R.</p>
+<div class="dl-actions"><a class="btn btn-primary btn-lg" href="downloads/alone-data.xlsx" download>Download Excel (.xlsx)</a><a class="btn btn-lg" href="{repo_url}">View on GitHub</a></div>
+</div></div></section>')
+
+  cards <- h('<div class="wrap"><div class="dl-grid">
+<div class="dl-card"><p class="eyebrow">Spreadsheet</p><h3>Excel workbook</h3>
+<p>All four datasets in one file, one sheet each, plus a data dictionary. Filters and frozen headers ready to go.</p>
+<p class="meta">alone-data.xlsx &middot; {info$xlsx_kb} KB &middot; v{pkg_version}</p>
+<a class="btn btn-primary" href="downloads/alone-data.xlsx" download>Download .xlsx</a></div>
+<div class="dl-card"><p class="eyebrow">Source</p><h3>GitHub</h3>
+<p>The package source, how the data is built, version history and release notes. Spot an error? Open an issue.</p>
+<p class="meta">github.com/doehm/alone</p>
+<div class="dl-actions"><a class="btn" href="{repo_url}">View repository</a><a class="btn" href="{repo_url}/issues">Report a data issue</a></div></div>
+<div class="dl-card"><p class="eyebrow">R package</p><h3>Install in R</h3>
+<p>Tidy data frames, documented and ready for analysis.</p>
+<pre>install.packages("alone")
+library(alone)
+survivalists</pre>
+<a class="btn" href="{cran_url}">alone on CRAN</a></div>
+</div></div>')
+
+  rows <- cat0(vapply(names(sets), function(n) {
+    h('<tr><td><code>{n}</code></td><td>{esc(docs[[n]]$desc)}</td><td class="num">{format(nrow(sets[[n]]), big.mark = ",")}</td><td class="num">{ncol(sets[[n]])}</td><td class="nowrap"><a href="downloads/csv/{n}.csv" download>{n}.csv</a> <span class="muted">({csv_kb(n)} KB)</span></td></tr>')
+  }, ""))
+  datasets <- h('<section class="section"><div class="wrap">
+<div class="section-head"><div><h2>Datasets</h2><p class="lede">Four tidy tables that join on <code>version</code>, <code>season</code> and <code>id</code>. Each is also available as its own CSV (UTF-8).</p></div></div>
+<div class="table-wrap"><table><thead><tr><th>Dataset</th><th>Description</th><th class="num">Rows</th><th class="num">Columns</th><th>CSV</th></tr></thead><tbody>{rows}</tbody></table></div>
+</div></section>')
+
+  dict <- cat0(vapply(names(sets), function(n) {
+    v <- docs[[n]]$vars
+    trs <- cat0(h('<tr><td><code>{v$variable}</code></td><td>{esc(v$description)}</td><td class="muted nowrap">{vapply(sets[[n]][v$variable], function(x) class(x)[1], "")}</td></tr>'))
+    h('<details class="dict"><summary><code>{n}</code> <span class="muted">&middot; {nrow(v)} columns &middot; {esc(docs[[n]]$title)}</span></summary>
+<div class="table-wrap"><table><thead><tr><th>Column</th><th>Description</th><th>Type</th></tr></thead><tbody>{trs}</tbody></table></div></details>')
+  }, ""))
+  dictionary <- h('<section class="section"><div class="wrap">
+<div class="section-head"><div><h2>Data dictionary</h2><p class="lede">What every column means. The same dictionary is included in the Excel workbook.</p></div></div>
+{dict}
+</div></section>')
+
+  terms <- h('<section class="section"><div class="wrap">
+<div class="section-head"><div><h2>Using the data</h2></div></div>
+<div class="panel"><p style="margin-top:0">The data is released under <strong>CC0</strong>: use it for anything, no permission needed. A link back to <a href="{site_url}/">{site_name}</a> or the <a href="{repo_url}">alone package</a> is appreciated.</p>
+<p style="margin-bottom:0" class="muted">Compiled from Wikipedia, IMDb and the shows&#39; official cast pages. Survivalist photos on this site are not part of the dataset and remain the property of their respective owners.</p></div>
+</div></section>')
+
+  body <- cat0(c(hero, cards, datasets, dictionary, terms))
+  write_page(page(h("Download the data | {site_name}"), body, P, "data",
+                  h("Download the Alone and Alone Australia datasets as an Excel workbook or CSVs, or install the alone R package. Free under CC0."),
+                  "data.html", card = "home",
+                  card_alt = h("{site_name} share card.")),
+             file.path(site, "data.html"))
 }
 
 # -----------------------------------------------------------------------------
@@ -766,5 +944,6 @@ for (i in seq_len(nrow(se))) build_season(i)
 build_summary("US")
 build_summary("AU")
 build_home()
+build_data_page(build_downloads())
 build_cards()
 message("Built ", nrow(se), " season pages, 2 summaries and the home page in ", normalizePath(site))
