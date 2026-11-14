@@ -27,7 +27,10 @@ site <- file.path(root, "website", "alonestatsdb")
 
 # branding
 site_name <- "Alone Stats Db"
-site_url  <- "https://alonestatsdb.com"   # used for canonical + social-share tags
+# Public address of the site, used for canonical + social-share tags. Must be live,
+# or link previews (Bluesky, etc.) can't fetch the card image.
+# Switch to "https://alonestatsdb.com" once the domain is pointing at the site.
+site_url  <- "https://doehm.github.io/alonestatsdb"
 
 for (f in list.files(file.path(root, "data"), pattern = "[.]rda$", full.names = TRUE)) load(f)
 
@@ -134,7 +137,13 @@ sv$img <- NA_character_
 for (i in seq_len(nrow(sv))) {
   key <- sprintf("%s%02d%s", sv$version[i], sv$season[i], sv$id[i])
   k <- match(key, src_key)
-  if (is.na(k)) next
+  if (is.na(k)) {
+    # returning survivalists (e.g. Alone: Frozen): reuse their most recent photo from another season
+    same_person <- which(grepl("^(US|AU)[0-9]{2}", src_key) & substring(src_key, 5) == sv$id[i])
+    if (!length(same_person)) next
+    k <- same_person[order(src_key[same_person], decreasing = TRUE)][1]
+    key <- src_key[k]
+  }
   out <- file.path(img_dir, paste0(key, ".jpg"))
   src_time <- suppressWarnings(file.mtime(src_imgs[k]))
   if (!file.exists(out) || isTRUE(src_time > file.mtime(out))) {
@@ -182,8 +191,9 @@ stat <- function(v, k, s = NULL) {
   h('<div class="stat"><span class="v">{v}</span><span class="k">{k}</span>{s}</div>')
 }
 
-page <- function(title, body, P = "", active = "", desc = "", path = "") {
+page <- function(title, body, P = "", active = "", desc = "", path = "", card = "home", card_alt = site_name) {
   canon <- paste0(site_url, "/", sub("^index[.]html$", "", path))
+  card_url <- h("{site_url}/images/social/{card}.jpg")
   nav <- cat0(c(
     h('<a href="{P}index.html"{if (active == "home") \' aria-current="page"\' else ""}>Home</a>'),
     h('<a href="{P}us.html"{if (active == "US") \' aria-current="page"\' else ""}>Alone US</a>'),
@@ -203,6 +213,15 @@ page <- function(title, body, P = "", active = "", desc = "", path = "") {
 <meta property="og:description" content="{esc(desc)}">
 <meta property="og:url" content="{canon}">
 <meta property="og:type" content="website">
+<meta property="og:image" content="{card_url}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="{esc(card_alt)}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{esc(title)}">
+<meta name="twitter:description" content="{esc(desc)}">
+<meta name="twitter:image" content="{card_url}">
+<meta name="theme-color" content="#121513">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
@@ -372,8 +391,11 @@ build_season <- function(i) {
   body <- cat0(c(hero, switcher,
                  h('<div class="wrap"><div class="stats" style="margin-top:1.6rem">{stats}</div></div>'),
                  results, people, loadout, episodes_sec, pager))
+  win_plain <- paste(win$name, collapse = " & ")
   write_page(page(h("{s$show} {s$title} | {site_name}"), body, P, s$group,
-                  h("Results, survivalists, loadouts and episodes for {s$show} {s$title}."), s$file),
+                  h("{win_plain} won {s$show} {s$title}{if (!is.na(s$subtitle)) paste0(' (', s$subtitle, ')') else ''} after {win$days_lasted[1]} days. Full results, survivalist profiles, loadouts and episode guide."),
+                  s$file, card = s$slug,
+                  card_alt = h("{s$show} {s$title} share card: winner {win_plain}, {win$days_lasted[1]} days.")),
              file.path(site, s$file))
 }
 
@@ -548,8 +570,9 @@ build_summary <- function(g) {
   body <- cat0(c(hero, h('<div class="wrap"><div class="stats">{stats}</div></div>'),
                  season_table, charts, strip, hall, records, loadouts_sec))
   write_page(page(h("{name}: all seasons | {site_name}"), body, P, g,
-                  h("Summary of every {name} season: winners, survival times, tap-out reasons and loadouts."),
-                  paste0(tolower(g), ".html")),
+                  h("{nrow(S)} seasons, {nrow(X)} survivalists: every {name} winner, survival time, tap-out reason and loadout."),
+                  paste0(tolower(g), ".html"), card = tolower(g),
+                  card_alt = h("{name}: all seasons share card with every winner.")),
              file.path(site, paste0(tolower(g), ".html")))
 }
 
@@ -603,8 +626,116 @@ library(alone)
 survivalists</pre></div></section>')
   ))
   write_page(page(h("{site_name} | Every season of Alone, by the numbers"), body, P, "home",
-                  "Results, survivalists and loadouts for every season of Alone and Alone Australia."),
+                  h("Results, survivalists, loadouts and episodes for all {nrow(se)} seasons of Alone and Alone Australia, by the numbers."),
+                  card = "home", card_alt = h("{site_name} share card showing the winners of every season.")),
              file.path(site, "index.html"))
+}
+
+# -----------------------------------------------------------------------------
+# social share cards: 1200x630 JPEGs in images/social/, rendered from small
+# HTML templates with a headless Chromium browser (Edge or Chrome). A card is
+# only re-rendered when its template changes. Set CHROME_PATH to override.
+# -----------------------------------------------------------------------------
+
+find_browser <- function() {
+  cands <- c(Sys.getenv("CHROME_PATH"),
+             "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+             "C:/Program Files/Microsoft/Edge/Application/msedge.exe",
+             "C:/Program Files/Google/Chrome/Application/chrome.exe",
+             "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+             Sys.which(c("google-chrome", "chromium", "chromium-browser", "microsoft-edge")))
+  cands <- cands[nzchar(cands) & file.exists(cands)]
+  if (length(cands)) cands[1] else NA_character_
+}
+
+file_url <- function(rel) paste0("file:///", gsub("\\\\", "/", normalizePath(file.path(site, rel), winslash = "/")))
+
+card_html <- function(eyebrow, title, sub, bg = NA, faces = character(0)) {
+  logo <- paste(readLines(file.path(site, "assets/favicon.svg"), warn = FALSE), collapse = "")
+  bg_css <- if (is.na(bg)) "none" else h("url('{file_url(bg)}')")
+  faces_html <- if (length(faces)) h('<div class="faces">{cat0(h(\'<img src="{vapply(faces, file_url, "")}">\'))}</div>') else ""
+  domain <- sub("^https?://", "", site_url)
+  h('<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
+<style>
+html,body{{margin:0;width:1200px;height:630px;overflow:hidden;background:#121513;color:#ece6da;font-family:Barlow,sans-serif}}
+.bg{{position:absolute;inset:0;background:{bg_css} 72% 28%/cover no-repeat;filter:saturate(.75) contrast(1.05)}}
+.shade{{position:absolute;inset:0;background:linear-gradient(90deg,rgba(18,21,19,.98) 0%,rgba(18,21,19,.9) 46%,rgba(18,21,19,.2) 100%),linear-gradient(0deg,rgba(18,21,19,.9) 0%,transparent 42%)}}
+.topo{{position:absolute;inset:0;background:repeating-radial-gradient(ellipse 120% 80% at 18% 30%,transparent 0 30px,rgba(236,230,218,.035) 30px 31px)}}
+.bar{{position:absolute;left:0;top:0;bottom:0;width:10px;background:#e2a33b}}
+.in{{position:absolute;left:70px;top:54px;right:70px;bottom:50px;display:flex;flex-direction:column}}
+.brand{{display:flex;align-items:center;gap:14px;font-family:"Barlow Condensed";font-weight:800;font-size:34px;letter-spacing:.08em;text-transform:uppercase}}
+.brand svg{{width:48px;height:48px}} .brand b{{color:#e2a33b;font-weight:800}}
+.eyebrow{{margin-top:auto;font-family:"Barlow Condensed";font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#e2a33b;font-size:27px}}
+h1{{font-family:"Barlow Condensed";font-weight:800;text-transform:uppercase;font-size:124px;line-height:.88;margin:6px 0 16px;max-width:820px}}
+.sub{{font-size:31px;line-height:1.3;color:#bdb6a6;max-width:760px}} .sub strong{{color:#ece6da;font-weight:600}}
+.faces{{display:flex;margin-top:22px}} .faces img{{width:60px;height:60px;border-radius:50%;object-fit:cover;object-position:50% 22%;border:3px solid #121513;margin-right:-12px}}
+.foot{{position:absolute;right:70px;top:60px;background:rgba(18,21,19,.82);border:1px solid #363d38;border-radius:8px;padding:4px 14px;font-family:"Barlow Condensed";font-weight:600;font-size:26px;letter-spacing:.06em;color:#908b7e}}
+</style></head><body>
+<div class="bg"></div><div class="shade"></div><div class="topo"></div><div class="bar"></div>
+<div class="in"><div class="brand">{logo}<span>Alone <b>Stats Db</b></span></div>
+<div class="eyebrow">{eyebrow}</div><h1>{title}</h1><div class="sub">{sub}</div>{faces_html}</div>
+<div class="foot">{domain}</div>
+</body></html>', .open = "{", .close = "}")
+}
+
+build_cards <- function() {
+  out_dir <- file.path(site, "images/social")
+  dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+  win1 <- sv[sv$result == 1 & !duplicated(paste(sv$skey, sv$result)), ]   # one winner per season
+  win1 <- win1[order(match(win1$skey, se$skey)), ]
+  cards <- list()
+
+  longest <- sv[which.max(sv$days_lasted), ]
+  cards$home <- card_html(
+    "Every season of Alone &amp; Alone Australia", "Alone<br>Stats Db",
+    h("<strong>{nrow(se)} seasons</strong> &middot; {nrow(sv)} survivalists &middot; {fmt(sum(sv$days_lasted), 0)} days survived"),
+    longest$img, win1$img[!is.na(win1$img)])
+
+  for (g in c("US", "AU")) {
+    S <- se[se$group == g, ]; X <- sv[sv$skey %in% S$skey, ]; W <- win1[win1$skey %in% S$skey, ]
+    cards[[tolower(g)]] <- card_html(
+      "All seasons", if (g == "US") "Alone" else "Alone<br>Australia",
+      h("<strong>{nrow(S)} seasons</strong> &middot; {nrow(X)} survivalists &middot; longest stay {max(X$days_lasted)} days"),
+      tail(W$img[!is.na(W$img)], 1), W$img[!is.na(W$img)])
+  }
+
+  for (i in seq_len(nrow(se))) {
+    s <- se[i, ]; w <- sv[sv$skey == s$skey & sv$result == 1, ]
+    eyebrow <- paste(c(s$show, if (!is.na(s$subtitle)) esc(s$subtitle) else esc(s$loc_short)), collapse = " &middot; ")
+    cards[[s$slug]] <- card_html(
+      eyebrow, s$title,
+      h("Winner{if (nrow(w) > 1) 's' else ''} <strong>{paste(esc(w$name), collapse = ' &amp; ')}</strong> &middot; {w$days_lasted[1]} days<br>{esc(paste(unique(c(s$loc_short, s$country)), collapse = ', '))}"),
+      w$img[!is.na(w$img)][1])
+  }
+
+  browser <- find_browser()
+  if (is.na(browser)) {
+    warning("No Edge/Chrome found: share cards not rendered (set CHROME_PATH).", call. = FALSE)
+    return(invisible())
+  }
+  manifest_path <- file.path(out_dir, "manifest.csv")
+  manifest <- if (file.exists(manifest_path)) read.csv(manifest_path, stringsAsFactors = FALSE) else data.frame(card = character(), hash = character())
+  tmp <- tempfile("cards"); dir.create(tmp)
+  n <- 0
+  for (nm in names(cards)) {
+    html_file <- file.path(tmp, paste0(nm, ".html"))
+    writeLines(cards[[nm]], html_file, useBytes = TRUE)
+    hash <- unname(tools::md5sum(html_file))
+    jpg <- file.path(out_dir, paste0(nm, ".jpg"))
+    if (file.exists(jpg) && identical(manifest$hash[match(nm, manifest$card)], hash)) next
+    png <- file.path(tmp, paste0(nm, ".png"))
+    system2(browser, shQuote(c("--headless=new", "--disable-gpu", "--hide-scrollbars", "--allow-file-access-from-files",
+                               "--virtual-time-budget=6000", "--window-size=1200,630",
+                               paste0("--screenshot=", png), paste0("file:///", gsub("\\\\", "/", html_file)))),
+            stdout = FALSE, stderr = FALSE)
+    if (!file.exists(png)) { warning("Card failed to render: ", nm, call. = FALSE); next }
+    image_read(png) |> image_crop("1200x630+0+0") |> image_write(jpg, format = "jpeg", quality = 86)
+    manifest <- rbind(manifest[manifest$card != nm, ], data.frame(card = nm, hash = hash))
+    n <- n + 1
+  }
+  write.csv(manifest, manifest_path, row.names = FALSE)
+  message("Share cards: ", n, " rendered, ", length(cards) - n, " unchanged")
 }
 
 # -----------------------------------------------------------------------------
@@ -615,4 +746,5 @@ for (i in seq_len(nrow(se))) build_season(i)
 build_summary("US")
 build_summary("AU")
 build_home()
+build_cards()
 message("Built ", nrow(se), " season pages, 2 summaries and the home page in ", normalizePath(site))
